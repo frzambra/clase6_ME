@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Métodos Estadísticos</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Profesor Francisco Zambrano Bigiarini" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Métodos Estadísticos
+## Temas: Teorema Central de Límite, Distribución Normal, Distribución Normal Estandarizada
+### Profesor Francisco Zambrano Bigiarini
+### 10 de septiembre 2018
+
+---
+
+
+
+
+
+
+background-image: url(gifs/lets_start.gif)
+---
+class: center, middle
+
+# Dinámica de la clase
+
+---
+
+# Datos utilizados
+
+&gt; Se utilizarán datos `reales` para los ejemplos y todos los análisis se presentarán utilizando código en `R`. El alumno puede `reproducir` los ejemplos de clase siguiendo el mismo orden.
+
+
+- Datos de `precipitación` mensual en la estación Maquehue (Temuco) entre 1950-2018.
+
+- Datos de `temperatura promedio mensual` en estación Quinta Normal (Santiago) entre 1975-2017.
+
+---
+
+# Cargamos los datos
+
+
+```r
+set.seed(123)
+temp &lt;- tempfile(fileext = ".zip")
+download.file("https://drive.google.com/uc?authuser=0&amp;id=1EiZriFacTOys4I2gK6xgifYUY_MEe9_s&amp;export=download",temp)
+out &lt;- unzip(temp, exdir = tempdir())
+datPrec &lt;- read.csv2(out[1]) #importa datos de precipitación
+datTempQN &lt;- read.csv2(out[3]) #importa datos temperatura
+```
+---
+class: center, middle
+
+# Resumen clase anterior
+
+---
+
+# Temas vistos
+
+### Distribución de probablidades
+
+.center[
+![](img/var_ale_cuant.png)
+]
+
+---
+# Temas vistos
+
+### Función de masa de probablidades (var. discreta)
+
+```r
+par(mfrow=c(1,2))
+k &lt;- c(1:30)
+plot(k,dbinom(k,size=30,prob=.5),type="h",main="Probabilidad de obtener cara \n con una moneda lanzada 30 veces",xlab="Numero de ensayos",ylab="Probabilidad")
+plot(k,dbinom(k,size=30,prob=1/6),type="h",main="Probabilidad de obtener 2 al\n lanzar un dado 30 veces",xlab="Numero de ensayos",ylab="Probabilidad")
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-2-1.png)&lt;!-- --&gt;
+
+```r
+par(mfrow=c(1,1))
+dbinom(k,size=30,prob=.15)
+```
+
+```
+##  [1] 4.039814e-02 1.033717e-01 1.702593e-01 2.028089e-01 1.861069e-01
+##  [6] 1.368433e-01 8.279597e-02 4.200678e-02 1.812057e-02 6.715271e-03
+## [11] 2.154632e-03 6.020296e-04 1.471023e-04 3.152191e-05 5.933537e-06
+## [16] 9.816513e-07 1.426621e-07 1.818243e-08 2.026524e-09 1.966921e-10
+## [21] 1.652875e-11 1.193252e-12 7.324307e-14 3.769864e-15 1.596648e-16
+## [26] 5.418490e-18 1.416599e-19 2.678443e-21 3.259768e-23 1.917511e-25
+```
+---
+# Temas vistos
+
+### Distribución de probablidades
+
+.center[
+![](img/var_ale_cuant2.png)
+]
+---
+# Temas vistos
+
+### Función de densidad de probabilidades (var. continua)
+
+```r
+hist(datTempQN$Dec,prob=TRUE,main='Temperatura promedio mes de diciembre',xlab='Temperatura (Celsius)',ylab='Probabilidad')
+lines(density(datTempQN$Dec),col='red',type='l')
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-3-1.png)&lt;!-- --&gt;
+
+---
+# Temas vistos
+
+### Función de distribución acumulada (var. continua)
+
+```r
+plot(ecdf(datTempQN$Dec),main='ECDF',xlab='Temperatura (Celsius)')
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-4-1.png)&lt;!-- --&gt;
+---
+
+# Temas vistos
+
+### Distribución de probablidades
+
+.center[
+![](img/var_ale_cuant4.png)
+]
+---
+# Temas vistos
+
+### Población y muestra
+
+.center[
+![](img/poblacion_muestra.png)
+]
+
+---
+# Temas vistos
+
+### Parámetros y estadísticos
+
+- **Parámetro:** Son las medidas o características descriptivas inherentes a las `poblaciones`. Resume los valores de algún atributo (variables) de la `población`. 
+
+Es un valor único.
+
+- **Estadístico:** Son las medidas descriptivas inherentes a una muestra, las cuales pueden usarse como estimación del parámetro. 
+
+No tiene un valor único, varía de una muestra a otra.
+---
+class: center, middle
+
+# Overview
+
+### ¿Qué veremos?
+
+---
+
+# Temas
+
+- Teorema Central de Límite (TCL)
+
+- Distribución normal `\((X\sim N(\mu,\sigma))\)`
+
+- Distribución Normal estandarizada `\((X\sim N(0,1))\)`
+
+---
+class: center, middle
+
+# Teorema Central de Límite
+
+---
+# Teorema
+
+**Definición:**
+
+En teoría de la probabilidad, el `teorema central de límite (TCL)` establece que, en algunas situaciones, cuando se `agregan variables aleatorias independientes`, esta tiende hacia una distribución normal ("curva de campana") incluso si las variables originales no siguen distribución normal. El teorema es un concepto `clave` en la teoría de la probabilidad porque implica que los métodos probabilísticos y estadísticos que funcionan para las distribuciones normales pueden `ser aplicables a muchos problemas` que involucran otros tipos de distribuciones.
+
+&gt; Si tomamos muestras de tamaño `n` suficientemente grande en un población y calculamos el promedio de cada una de las muestras, no importa la forma de la distribución original de la población, la `distribución de promedios` seguirá una `distribución normal`.
+
+---
+
+# Ejemplo Teorema Centra de Límite
+
+`Población:` precipitación mensual entre 1950 a 2018 (757 meses)
+
+
+```r
+barplot(datPrec$PP,names.arg=datPrec$dates)
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-5-1.png)&lt;!-- --&gt;
+---
+
+# Ejemplo Teorema Centra de Límite
+
+Precipitación mensual sigue distribución gamma/pearson-3
+
+
+```r
+hist(datPrec$PP,prob=TRUE,main='Histograma y funcion de densidad de precipitacion mensual',xlab='Precipitacion mensual (mm)') #grafica histograma
+lines(density(datPrec$PP),col='red')
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-6-1.png)&lt;!-- --&gt;
+---
+# Ejemplo Teorema Centra de Límite
+
+`Muestra:` promedio de 30 meses en la población.
+30 repeticiones
+
+
+```r
+mu &lt;- c() # crea vector vacio
+for (i in 1:30){
+  mu[i] &lt;-mean(sample(datPrec$PP,30),replace=FALSE)
+}
+```
+---
+# Ejemplo Teorema Centra de Límite
+
+30 repeticiones
+
+```r
+hist(mu,xlab='Precipitacion promedio mensual',ylab='Probabilidad',prob=TRUE,main='')
+lines(density(mu),col='red')
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-8-1.png)&lt;!-- --&gt;
+---
+# Ejemplo Teorema Central de Límite
+
+100 repeticiones
+
+
+```r
+mu &lt;- c() # crea vector vacio
+for (i in 1:100){
+  mu[i] &lt;-mean(sample(datPrec$PP,30),replace=FALSE)
+}
+```
+---
+# Ejemplo Teorema Central de Límite
+
+100 repeticiones
+
+```r
+hist(mu,xlab='Precipitacion promedio mensual',ylab='Probabilidad',prob=TRUE,main='')
+lines(density(mu),col='red')
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-10-1.png)&lt;!-- --&gt;
+---
+# Ejemplo Teorema Central de Límite
+
+1000 repeticiones
+
+
+```r
+mu &lt;- c() # crea vector vacio
+for (i in 1:1000){
+  mu[i] &lt;-mean(sample(datPrec$PP,30),replace=FALSE)
+}
+```
+---
+# Ejemplo Teorema Central de Límite
+
+1000 repeticiones
+
+```r
+hist(mu,xlab='Precipitacion promedio mensual',ylab='Probabilidad',prob=TRUE,main='')
+lines(density(mu),col='red')
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-12-1.png)&lt;!-- --&gt;
+---
+# Ejemplo Teorema Central de Límite
+
+`Conclusión:` 
+
+&gt; La distribución original de los datos puede tener cualquier distribución, sin embargo el histograma de los promedios de muestras de tamaño n siempre será normal.
+
+**Material comlementario:** Aplicación dinámica que permite entender el concepto del Teorema Central de Límite.
+
+https://tuomonieminen.shinyapps.io/CLTdemo/
+
+---
+class: center, middle
+
+# Distribución normal 
+
+---
+# ¿Qué es?
+
+
+```r
+set.seed(1234) #setea semilla aleatorización
+simNorm &lt;- rnorm(1000,10,2) #valores simulados distribución normal
+hist(simNorm,main='Histograma Distribucion Normal',prob=TRUE,xlab='valores',ylab='Densidad') #gráfica histograma
+lines(density(simNorm),col='red')
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
+---
+# ¿Qué es?
+
+&gt; La  distribución  de  probabilidad  conocida  como  `distribución  normal`  es,  por  la  cantidad  de  fenómenos que explica, `la más importante` de las distribuciones estadísticas. 
+
+- La `distribución normal`, también conocida como la distribución Gaussiana (`forma de campana`), es una distribución de probabilidad que es simétrica con respecto a la media.
+
+- Los datos en torno a la `media` son más `frecuentes` en comparación a los que están `alejados ` de la `media`.
+
+- Permite modelar un gran número `fenómenos naturales`.
+
+- Por otro lado, en virtud del `teorema del límite central`, casi cualquier distribución de probabilidad, se puede `aproximar a una normal` bajo ciertas condiciones.
+
+---
+
+# Definiciones
+
+- Una variable aleatoria `continua, X`, sigue una distribución normal de media `\(\mu\)` y desviación estandar `\(\sigma\)`, y se designa por `\(X \sim N(\mu,\sigma)\)`, si se cumplen las siguientes condiciones:
+
+1. La variable puede tomar cualquier valor: `\((-\infty, +\infty)\)` y
+
+2. Su función de densidad se pueda describir por:
+
+`$$f(x) = \frac{e^{-\frac{1}{2}\big(\frac{x-\mu}{\sigma}\big)^2}}{\sigma\sqrt{2\pi}}$$`
+
+`\(x:\)` variable aleatoria continua,  
+`\(\mu:\)` media o esperanza de `x`,  
+`\(\sigma:\)` varianza de `x`
+
+
+---
+# Histograma
+
+
+```r
+hist(simNorm,main='Histograma Distribucion Normal',xlab='valores',ylab='Frecuencia') #gráfica histograma
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-14-1.png)&lt;!-- --&gt;
+---
+# Función de densidad de probabilidades
+
+
+```r
+plot(density(simNorm),type='l',main='Histograma Distribucion Normal',xlab='valores',ylab='Frecuencia') #gráfica histograma
+text(4, 0.15, expression(f(x) == frac(e^-frac(1,2)(frac(x-mu,sigma))^2,sigma*sqrt(2*pi))),cex=2)
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-15-1.png)&lt;!-- --&gt;
+
+---
+# Propiedades de la distribución normal
+
+1. Su esperanza (media) es `\(\mu\)`.
+
+2. Su varianza es `\(\sigma^2\)`, y su desviacion estandar es `\(\sigma\)`.
+
+3. Es simétrica respecto a su media ($\mu$).
+
+4. Media = moda = mediana 
+
+5. La probabilidad total equivale al área encerrada bajo la curva.
+
+.center[
+![](img/median_mode_mean_normal.png)
+]
+---
+# Propiedades de la distribución normal
+
+Recordemos que la `\(\sigma\)` es una medida de cómo están distribuidos los datos. Podemos caracterizar la distribución de probabilidad en entorno de la `\(\mu\)`:
+
+- Alrededor del `68%` de las observaciones está dentro de `1 desviaciones estándar` de la `media`.
+
+- Alrededor del `95%` de las observaciones está dentro de `1.96 desviaciones estándar` de la `media`.
+
+- Alrededor del `99.7%` de las observaciones está dentro de `3 desviaciones estándar` de la `media`.
+
+.center[
+![](img/distr_normal_propieties.png)
+]
+
+---
+#Ejemplo 
+
+### Temperatura media mensual Quinta Normal mes de abril
+
+
+```r
+hist(datTempQN$Apr,main='Histograma Temperatura media mensual abril',prob=TRUE,xlab='Temperatura (°C)',ylab='Densidad') #gráfica histograma
+lines(density(datTempQN$Apr),col='red')
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-16-1.png)&lt;!-- --&gt;
+
+---
+#Ejemplo 
+
+### Temperatura media mensual Quinta Normal mes de abril
+
+Promedio, mediana y desviación estandar
+
+```r
+mu &lt;- mean(datTempQN$Apr) #valor promedio
+print(mu)
+```
+
+```
+## [1] 14.38372
+```
+
+```r
+mediana &lt;- median(datTempQN$Apr) #valor de la mediana
+print(mediana)
+```
+
+```
+## [1] 14.3
+```
+
+```r
+de &lt;- sd(datTempQN$Apr) #desviación estandar
+print(de)
+```
+
+```
+## [1] 0.7361192
+```
+
+---
+#Ejemplo 
+
+### Temperatura promedio mensual Quinta Normal mes de abril
+
+
+```r
+hist(datTempQN$Apr,main='Histograma Temperatura promedio mensual abril',prob=TRUE,xlab='Temperatura (Celsius)',ylab='Densidad') #gráfica histograma
+lines(density(datTempQN$Apr),col='lightgray')
+abline(h = 0, v = mu, col = "red",lty=3)
+abline(h = 0, v = mediana, col = "blue",lty=3)
+abline(h = 0, v = mu+de, col = "darkgreen",lty=3)
+abline(h = 0, v = mu-de, col = "darkgreen",lty=3)
+text(mu-de,0.6,bquote(paste(mu-sigma,'=',.(round(mu-de,1)))),adj=c(1,0))
+text(mu+de,0.6,bquote(paste(mu+sigma,'=',.(round(mu+de,1)))),adj=c(-0.2,0))
+text(mu,0.7,bquote(paste(mu,'=',.(round(mu,1)))),adj=c(-0.2,0))
+text(mediana,0.6,bquote(paste(tilde(x),'=',.(round(mediana,1)))),adj=c(-0.2,0))
+```
+---
+#Ejemplo 
+
+### Temperatura promedio mensual Quinta Normal mes de abril
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-19-1.png)&lt;!-- --&gt;
+---
+#Ejemplo
+
+### Temperatura promedio mensual Quinta Normal mes de abril
+
+¿Qué nos dise la distribución de probabilidades normal?
+
+- El valor `más esperado` de temperatura promedio mensual en abril es 14.4°C.
+
+- El `50%` de las temperaturas promedio para abril son `menores a` 14.3°C
+
+- El `50%` de las temperaturas promedio para abril son `mayores a` 14.3°C
+
+- El `68%` de los valores de temperatura promedio en abril se encuentran entre 13.6°C y 15.1°C
+
+- El `95%` de los valores de temperatura promedio en abril se encuentran entre 12.9°C y 15.8°C
+---
+#Ejemplo
+
+### Temperatura promedio mensual Quinta Normal mes de abril
+
+
+```r
+hist(datTempQN$Apr,main='Histograma Temperatura promedio mensual Abril',prob=TRUE,xlab='Temperatura (Celsius)',ylab='Densidad') #gráfica histograma
+lines(density(datTempQN$Apr),col='red')
+lines(density(rnorm(100,mean(datTempQN$Apr),sd(datTempQN$Apr))),col='blue')
+legend(12.3,0.6, legend=c("Densidad temperatura", "Densidad Simulada"),col=c("red","blue"), lty=1:2, cex=0.8)
+```
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-20-1.png)&lt;!-- --&gt;
+
+---
+class: center, middle
+
+# Distribución normal  estandarizada
+
+---
+# Definiciones
+
+- La distribución normal estandarizada es una distribución normal con `\(\mu = 0\)` y `\(\sigma= 1\)`.
+
+&gt; Si `\(x\)` es una observación (valor) de una distribución normal con media `\(\mu\)` y desviación estándar `\(\sigma\)`, el valor estándar de `\(x\)` es:
+
+$$ z=\frac{x-\mu}{\sigma}$$
+
+Este valor estándar también se le conoce como `valor-z`.
+
+- El `valor-z` nos indica a cuantas `\(\sigma\)` está la observación original `\(x\)` en relación a la `\(\mu\)` y en que dirección.
+
+---
+# Histograma y función de densidad de probabilidades
+
+
+```r
+hist(rnorm(1000),xlab='valor-z',ylab='Probabilidad',prob=TRUE)
+lines(density(rnorm(1000)),col='red')
+abline(v = 0, col = "red",lty=3)
+abline(v = 0, col = "blue",lty=3)
+abline(v = 1, col = "darkgreen",lty=3)
+abline(v = -1, col = "darkgreen",lty=3)
+text(mu-de,0.6,bquote(paste(mu-sigma,'=',.(round(mu-de,1)))),adj=c(1,0))
+text(mu+de,0.6,bquote(paste(mu+sigma,'=',.(round(mu+de,1)))),adj=c(-0.2,0))
+text(mu,0.7,bquote(paste(mu,'=',.(round(mu,1)))),adj=c(-0.2,0))
+text(mediana,0.6,bquote(paste(tilde(x),'=',.(round(mediana,1)))),adj=c(-0.2,0))
+```
+---
+# Histograma y función de densidad de probabilidades
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-22-1.png)&lt;!-- --&gt;
+---
+# Equivalencia normal estandarizada
+
+Los valores de la variable aleatoria continua `\(x\)` tienen las siguientes equivalencia con eñ `valor-z` de acuerdo a su `\(\mu\)` y `\(\sigma\)`, independiente del valor que sean.
+
+.center[
+![](img/equivalencia_normal_estandarizada.png)
+]
+---
+# Ejemplo
+
+### Temperatura promedio mensual en Quinta Normal.
+
+$$ z=\frac{x-\mu}{\sigma}$$
+
+
+```r
+datEst &lt;- data.frame(x=datTempQN$Apr,z=(datTempQN$Apr-mu)/de) #datos observado y estandarizados
+head(datEst)
+```
+
+```
+##      x           z
+## 1 13.8 -0.79297062
+## 2 13.3 -1.47220840
+## 3 15.6  1.65228539
+## 4 14.0 -0.52127551
+## 5 13.8 -0.79297062
+## 6 14.4  0.02211472
+```
+---
+# Ejemplo
+
+### Temperatura promedio mes de abril en Quinta Normal
+
+
+```r
+datEst &lt;- data.frame(x=datTempQN$Apr,z=(datTempQN$Apr-mu)/de) #datos observado y estandarizados
+plot(density(datEst$x),type='l')
+abline(v = mu, col = "red",lty=3,lwd=3)
+abline(v = mediana, col = "blue",lty=3,lwd=3)
+abline(v = mu+de, col = "darkgreen",lty=3,lwd=3)
+abline(v = mu-de, col = "darkgreen",lty=3,lwd=3)
+text(mu-de,0.6,bquote(paste(mu-sigma,'=',.(round(mu-de,1)))),adj=c(1,0))
+text(mu+de,0.6,bquote(paste(mu+sigma,'=',.(round(mu+de,1)))),adj=c(-0.2,0))
+text(mu,0.7,bquote(paste(mu,'=',.(round(mu,1)))),adj=c(-0.2,0))
+text(mediana,0.6,bquote(paste(tilde(x),'=',.(round(mediana,1)))),adj=c(-0.2,0))
+```
+---
+# Ejemplo
+
+### Temperatura promedio mes de abril en Quinta Normal
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-25-1.png)&lt;!-- --&gt;
+---
+# Ejemplo
+
+### Temperatura promedio mes de abril en Quinta Normal
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-26-1.png)&lt;!-- --&gt;
+---
+
+# Utilidad de la distribución normal estandarizada
+
+- Nos permite `comparar variables` en términos de su `variación` y `no` de su `magninut`.
+
+- Si queremos comparar la temperatura promedio para abril de Quinta Normal ( `\(\mu=\)` 14.4) con Aysén ( `\(\mu=10\)` ).
+
+- Ambas tienen magnitudes diferentes porque pertenece a distintas zonas climáticas.
+
+- Transformando ambas a distribución normal estandarizada podemos saber cual a disminuido o aumentado más respecto a su media.
+
+- Analizamos la probablidad que corresponde al área bajo la curva de la función de densidad de probabilidades.
+
+---
+# Estimación de la probabilidad (área bajo la curva)
+
+¿Cuál es la probabilidad de que la temperatura promedio mensual de abril en Quinta Normal sea mayor de 15°C?
+
+En `R`:
+
+Sabemos que el `\(\mu=\)` 14.4 y que `\(\sigma=\)` 0.74
+
+Utilizamos la función `pnorm`, nos entrega el área bajo la curva para valores de menores al valor deseado
+
+
+```r
+p15 &lt;- pnorm(15,mean=14.4,0.74)
+print(p15)
+```
+
+```
+## [1] 0.7912628
+```
+---
+# Estimación de la probabilidad (área bajo la curva)
+
+¿Cuál es la probabilidad de que la temperatura promedio mensual de abril en Quinta Normal sea mayor de 15°C?
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-28-1.png)&lt;!-- --&gt;
+---
+# Estimación de la probabilidad (área bajo la curva)
+
+¿Cuánto es la temperatura promedio mensual para una probabilidad de excedencia de 20.9%?
+
+Cómo sabemos que la función nos entrega el área bajo la curva desde `\(-\infty\)`, calculamos el complemento es decir, `\(1-0.209\)`
+
+Así, queremos saber `\(P(X\leq0.791)\)`
+
+
+```r
+qnorm(0.791,mean=14.4,sd=0.74)
+```
+
+```
+## [1] 14.99932
+```
+---
+# Estimación de la probabilidad (área bajo la curva)
+
+¿Cuánto es la temperatura promedio mensual para una probabilidad de excedencia de 20.9%?
+
+![](clase10sep2018_files/figure-html/unnamed-chunk-30-1.png)&lt;!-- --&gt;
+
+---
+background-image: url(gifs/end.gif)
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
